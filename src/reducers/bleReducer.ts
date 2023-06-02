@@ -61,7 +61,7 @@ const BLEReducer = (state = INITIAL_STATE, action: any): BLEReducerState => {
     case 'CONNECTED_DEVICE':
         return update(state, {connectedDevice: {$set: action.connectedDevice}});
     case 'DISCONNECTED_DEVICE':
-        return update(state, {connectedDevice: {$apply: (items: any) => items.filter((item: any) => item.id !== action.disconnectedDevice.id)}});
+        return update(state, {connectedDevice: {$apply: (items: any) => items.filter((item: any) => item.id !== action.payload.id)}});
     case 'CONNECTED_SERVICES':
       return update(state, {
         connectedDeviceServices: {$set: action.connectedDeviceServices},
@@ -79,9 +79,17 @@ const BLEReducer = (state = INITIAL_STATE, action: any): BLEReducerState => {
         },
       });
       case 'SET_LOCATION':
-        return update(state, {location: {$set: action.location}});
-        case 'SET_BATTERY':
-          return update(state, {battery: {$set: action.battery}});
+        return update(state, {BLEList: {$set: state.BLEList.map(item=>{
+          if(item.id==action.payload.id)
+            item.location = action.payload.location
+          return item;
+        })}});
+      case 'SET_BATTERY':
+        return update(state, {BLEList: {$set: state.BLEList.map(item=>{
+          if(item.id==action.payload.id)
+            item.battery = action.payload.battery
+          return item;
+        })}});
       case 'CHANGE_STATUS':
         return update(state, {status: {$set: action.status}});
     default:

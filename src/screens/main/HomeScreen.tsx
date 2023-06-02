@@ -2,12 +2,11 @@ import React, {useEffect} from 'react';
 import {View, Text, TouchableOpacity} from 'react-native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import {useSelector, useDispatch} from 'react-redux'
-import { startScan } from '../../actions/bleActions';
-import { Appearance } from 'react-native';
+import { startScan, stopScan } from '../../actions/bleActions';
+import { useColorSchemeListener } from '../../utils/useColorSchemeListener';
 
-function ListMenuItem(props: any) {
-const colorScheme = Appearance.getColorScheme();
-const defaultBackgroundColor = colorScheme === 'dark' ? '#242424' : '#fff';
+function ListMenuItem({defaultBackgroundColor, onPress, icon, title}) {
+
   return (
     <View
     style={{
@@ -16,7 +15,7 @@ const defaultBackgroundColor = colorScheme === 'dark' ? '#242424' : '#fff';
     }}
     >
       <TouchableOpacity
-        onPress={props.onPress}
+        onPress={onPress}
       style={{
         flex: 1,
         alignItems: 'center',
@@ -27,9 +26,9 @@ const defaultBackgroundColor = colorScheme === 'dark' ? '#242424' : '#fff';
       }}
       >
         <View style={{backgroundColor: '#3a8fff', padding: 4, borderRadius: 100}}>
-          <MaterialIcons name={props.icon} size={50} color={'white'}/>
+          <MaterialIcons name={icon} size={50} color={'white'}/>
         </View>
-        <Text style={{color: '#3a8fff', marginTop: 4}}>{props.title}</Text>
+        <Text style={{color: '#3a8fff', marginTop: 4}}>{title}</Text>
       </TouchableOpacity>
     </View>
   )
@@ -41,27 +40,28 @@ interface timerState {
 }
 
 function HomeScreen({navigation}) {
-
+  const colorScheme = useColorSchemeListener();
+  const defaultBackgroundColor= colorScheme === 'dark' ? '#242424' : '#fff';
   const isRunning = useSelector((state: { timer: timerState }) => state?.timer?.isRunning);
   const dispatch = useDispatch()
 
+
   useEffect(() => {
-    console.log('Scanning')
     dispatch(startScan());
     let intervalId = setInterval(() => {
-      console.log('...')
-    }, 3000)
+      dispatch(stopScan())
+      dispatch(startScan())
+    }, 10000)
     
     return () => 
       clearInterval(intervalId)
     
   }, [isRunning])
   
-
   return (
     <View style={{flex: 1, alignItems: 'center', justifyContent: 'center'}}>
-      <ListMenuItem title="My Devices" icon = 'where-to-vote' onPress={()=>{navigation.navigate('Beacons')}} />         
-      <ListMenuItem title="Account" icon = 'perm-identity' onPress={()=>{navigation.navigate('Account')}} />         
+      <ListMenuItem title="My Devices" icon = 'where-to-vote' onPress={()=>{navigation.navigate('Beacons')}} defaultBackgroundColor={defaultBackgroundColor}/>         
+      <ListMenuItem title="Account" icon = 'perm-identity' onPress={()=>{navigation.navigate('Account')}} defaultBackgroundColor={defaultBackgroundColor}/>         
       {/* <ListMenuItem title="Setting" icon = 'settings' onPress={()=>{}} />          */}
     </View>
   );

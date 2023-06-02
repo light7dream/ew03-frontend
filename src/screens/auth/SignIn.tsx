@@ -31,8 +31,8 @@ const SignIn = () => {
   const navigation = useNavigation<signInScreenProp>()
   const dispatch: AppDisPatch = useDispatch();
 
-  const[email, setEmail] = useState('')
-  const[password, setPassword] = useState('')
+  const[email, setEmail] = useState('admin@doc.com')
+  const[password, setPassword] = useState('123456')
   const[message, setMessage] = useState('')
 
   const onChangeEmail = (email: string) => {

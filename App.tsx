@@ -32,18 +32,13 @@ import AccountScreen from './src/screens/main/AccountScreen';
 import { ScrollView } from 'react-native-gesture-handler';
 import { Appearance, useColorScheme } from 'react-native';
 import { DefaultTheme, DarkTheme } from '@react-navigation/native';
+import { useColorSchemeListener } from './src/utils/useColorSchemeListener';
+import MapViewScreen from './src/screens/main/MapViewScreen';
 const Stack = createStackNavigator<RootStackParamList>();
 
-const Route = () => {
+const Route = ({defaultBackgroundColor, defaultColor, MyTheme}) => {
   const user = useSelector((state: any) => state.auth?.user);
-  const colorScheme = useColorScheme();
-  const isDarkMode = colorScheme === 'dark';
-  const defaultBackgroundColor = colorScheme === 'dark' ? '#242424' : '#fff';
 
-  const MyTheme = {
-    dark: isDarkMode,
-    colors: isDarkMode ? DarkTheme.colors : DefaultTheme.colors,
-  };
   return(
     <NavigationContainer theme={MyTheme}>
         <MenuProvider>
@@ -70,6 +65,7 @@ const Route = () => {
             )}} />
             <Stack.Screen name="Details" component={DetailsScreen} options={{headerShown: true}} />
             <Stack.Screen name="Account" component={AccountScreen} options={{headerShown: true}} />
+            <Stack.Screen name="MapView" component={MapViewScreen} options={{headerShown: true}} />
             <Stack.Screen name="Beacons" component={MyBeaconList} options={{headerShown: true, headerRight: (props) => {
               const navigation = useNavigation<RootStackParamList>();
               return(
@@ -84,12 +80,12 @@ const Route = () => {
                           },
                         }}
                         >
-                          <MaterialIcons name='control-point' size={32} />
+                          <MaterialIcons name='control-point' size={32} color={defaultColor} />
                         </MenuTrigger>
-                      <MenuOptions optionsContainerStyle={{backgroundColor: defaultBackgroundColor }}>
-                        <MenuOption onSelect={() => {navigation.navigate('QrScan')}} text='Qr Scan'></MenuOption>
-                        <MenuOption onSelect={() => {navigation.navigate('AddBeacon')}} text="Add manually"></MenuOption>
-                        <MenuOption onSelect={() => {navigation.navigate('DeviceScan')}} text="Add via Bluetooth"></MenuOption>
+                      <MenuOptions optionsContainerStyle={{backgroundColor: defaultBackgroundColor}}>
+                        <MenuOption onSelect={() => {navigation.navigate('QrScan')}} customStyles={{optionText: {color: defaultColor}}} text='Qr Scan'></MenuOption>
+                        <MenuOption onSelect={() => {navigation.navigate('AddBeacon')}} customStyles={{optionText: {color: defaultColor}}}  text="Add manually"></MenuOption>
+                        <MenuOption onSelect={() => {navigation.navigate('DeviceScan')}} customStyles={{optionText: {color: defaultColor}}}  text="Add via Bluetooth"></MenuOption>
                       </MenuOptions>
                     </Menu>
                   )}
@@ -112,10 +108,18 @@ const Route = () => {
 }
 
 export default function App() {
+  const colorScheme = useColorSchemeListener();
+  const isDarkMode = colorScheme === 'dark';
+  const defaultBackgroundColor = colorScheme === 'dark' ? '#242424' : '#fff';
+  const defaultColor = colorScheme === 'dark' ? '#eee' : '#333';
 
+  const MyTheme = {
+    dark: isDarkMode,
+    colors: isDarkMode ? DarkTheme.colors : DefaultTheme.colors,
+  };
   return (
     <Provider store={store}>
-      <Route />
+      <Route defaultBackgroundColor={defaultBackgroundColor} MyTheme={MyTheme} defaultColor={defaultColor}/>
     </Provider>
   );
 }

@@ -1,5 +1,5 @@
 import React, { useState, Fragment, useRef } from 'react'
-import { TouchableOpacity, Text, Linking, View, Image, ImageBackground, BackHandler, StyleSheet, TextInput } from 'react-native';
+import { TouchableOpacity, Text, Linking, View, Image, ImageBackground, BackHandler, StyleSheet, TextInput, Button } from 'react-native';
 import QRCodeScanner from 'react-native-qrcode-scanner';
 
 import { Dimensions } from 'react-native';
@@ -8,12 +8,14 @@ import { AppDisPatch } from '../../store';
 import { addBeacon } from '../../services/appService';
 import { addBeacon as addedBeacon } from '../../actions/appActions';
 import { Appearance } from 'react-native';
+import { useColorSchemeListener } from '../../utils/useColorSchemeListener';
+import Geocoder from 'react-native-geocoding';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 
+Geocoder.init("AIzaSyBM7oejbfOKFrGXvyH2fhYY5mBaNI71_J8");
 const deviceWidth = Dimensions.get('screen').width;
 const deviceHeight = Dimensions.get('screen').height;
-const colorScheme = Appearance.getColorScheme();
 
-const defaultBackgroundColor = colorScheme === 'dark' ? '#242424' : '#fff';
 
 const styles = StyleSheet.create({
     scrollViewStyle: {
@@ -55,11 +57,10 @@ const styles = StyleSheet.create({
         marginLeft: 5,
         marginRight: 5,
         marginTop: '10%',
-        backgroundColor: defaultBackgroundColor
     },
     scanCardView: {
         width: deviceWidth - 32,
-        height: deviceHeight / 2,
+        // height: deviceHeight - 200,
         alignSelf: 'center',
         justifyContent: 'center',
         // alignItems: 'center',
@@ -68,7 +69,6 @@ const styles = StyleSheet.create({
         marginLeft: 5,
         marginRight: 5,
         marginTop: 10,
-        backgroundColor: defaultBackgroundColor
     },
     buttonWrapper: {
         display: 'flex', 
@@ -116,7 +116,6 @@ const styles = StyleSheet.create({
     },
     buttonTouchable: {
         fontSize: 21,
-        backgroundColor: defaultBackgroundColor,
         marginTop: 32,
         width: deviceWidth - 62,
         justifyContent: 'center',
@@ -129,10 +128,15 @@ const styles = StyleSheet.create({
     }
 });
 
-const QrScanScreen = () => {
-
+const QrScanScreen = ({navigation}) => {
+    const colorScheme = useColorSchemeListener();
+    const defaultBackgroundColor = colorScheme === 'dark' ? '#242424' : '#eee';
+    const defaultColor = colorScheme === 'dark' ? '#fff' : '#333';
     const [scan, setScan] = useState(false);
     const [name, setName] = useState('');
+    const [address, setAddress] = useState('');
+    const [location, setLocation] = useState();
+    const [description, setDescription] = useState('');
     const [scanResult, setScanResult] = useState(false);
     const [result, setResult] = useState({});
     const [mac, setMac] = useState('')
@@ -164,8 +168,34 @@ const QrScanScreen = () => {
     const handleChangeName = (name: string) => {
         setName(name)
     }
+
+    const handleChangeDescription = (description: string) => {
+        setDescription(description)
+    }
+
+    const handleChangeAddress = (addr: string) => {
+        setAddress(addr)
+    }
+
+    const handleSubmitAddress = () => {
+        Geocoder.from(address)
+		.then(json => {
+			var location = json.results[0].geometry.location;
+			console.log(location);
+            setLocation(location)
+            Geocoder.from(location.lat, location.lng)
+                .then(json => {
+                    var addressComponent = json.results[0].formatted_address;
+                    console.log(json.results[0].formatted_address)
+                    setAddress(addressComponent)
+                })
+                .catch(error => console.warn(error));
+		})
+		.catch(error => console.warn(error));
+      };
+
     const handleSubmit = () => {
-        addBeacon({name, mac})
+        addBeacon({name, mac, location, description, address})
             .then((res) => {
                 setScan(false);
                 setScanResult(false)
@@ -179,7 +209,7 @@ const QrScanScreen = () => {
     <View style={styles.scrollViewStyle}>
         <Fragment>
             {!scan && !scanResult &&
-                <View style={styles.cardView} >
+                <View style={{...styles.cardView, backgroundColor: defaultBackgroundColor}} >
                     {/* <Image source={require('../../assets/camera.png')} style={{height: 48, width: 48}}></Image> */}
                     <Text numberOfLines={8} style={styles.descText}>Please move your camera {"\n"} over the QR Code</Text>
                     <Image source={require('../../assets/qr-code.png')} style={{margin: 8, width: 120, height: 120}}></Image>
@@ -194,14 +224,41 @@ const QrScanScreen = () => {
             {scanResult &&
                 <Fragment>
                     <Text style={styles.textTitle1}>Result</Text>
-                    <View style={scanResult ? styles.scanCardView : styles.cardView}>
+                    <View style={{...(scanResult ? styles.scanCardView : styles.cardView), backgroundColor: defaultBackgroundColor}}>
                         <View style={{flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 8}}>
                             <Text style={{fontSize: 16}}>Name</Text>
-                            <TextInput style={{borderBottomColor: '#000', borderBottomWidth: .2, minWidth: 160, maxWidth: deviceWidth-160}} onChangeText={handleChangeName} />
+                            <TextInput style={{borderBottomColor: '#000', borderBottomWidth: .3, minWidth: 160, maxWidth: deviceWidth-160}} onChangeText={handleChangeName} />
                         </View>
                         <View style={{flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 8}}>
                             <Text style={{fontSize: 16}}>MAC</Text>
-                            <TextInput value={result?.data.split('=')[1]} style={{borderBottomColor: '#000', borderBottomWidth: .2, minWidth: 160, maxWidth: deviceWidth-160}} />
+                            <TextInput value={result?.data.split('=')[1]} style={{borderBottomColor: '#000', borderBottomWidth: .3, minWidth: 160, maxWidth: deviceWidth-160}} />
+                        </View>
+                        <View style={{flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 8}}>
+                            <Text style={{fontSize: 16}}>Address</Text>
+                            <TextInput value={address} style={{borderBottomColor: '#000', borderBottomWidth: .3, minWidth: 160, maxWidth: deviceWidth-160}} onChangeText={handleChangeAddress} onSubmitEditing={handleSubmitAddress}/>
+                        </View>
+                        <View style={{flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'flex-end', marginBottom: 8}}>
+                            {/* <Text style={{fontSize: 16}}></Text> */}
+                            {
+                                location&&(
+                                <>
+                                <Text style={{fontSize: 16}}>{location.lat}, {location.lng}</Text>
+                                <TouchableOpacity onPress={()=>{
+                                    navigation.navigate('MapView', {location: {
+                                        latitude: location.lat,
+                                        longitude: location.lng
+                                    }})
+                                }} style={{borderRadius: 4, backgroundColor: '#3aa6ff', flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginLeft: 8}}>
+                                    <MaterialIcons name='place' size={27} color={'#fff'} />
+                                </TouchableOpacity>
+                                </>
+                                )
+                            }
+                        </View>
+                        
+                        <View style={{flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 8}}>
+                            <Text style={{fontSize: 16}}>Description</Text>
+                            <TextInput value={description} style={{borderBottomColor: '#000', borderBottomWidth: .3, minWidth: 160, maxWidth: deviceWidth-160}} onChangeText={handleChangeDescription} />
                         </View>
                         <TouchableOpacity onPress={handleSubmit} style={{backgroundColor: '#2196f3', borderRadius: 8, padding: 8, marginTop: 16}}>
                             <View style={styles.buttonWrapper}>
@@ -214,7 +271,6 @@ const QrScanScreen = () => {
                                 <Text style={{...styles.buttonTextStyle, color: '#2196f3'}}>Click to scan again</Text>
                             </View>
                         </TouchableOpacity>
-                        
                     </View>
                 </Fragment>
             }

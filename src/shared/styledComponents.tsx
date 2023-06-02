@@ -2,24 +2,20 @@ import { Dimensions, SafeAreaView, StyleSheet, View, TextInput, Text, Pressable,
 import React from 'react'
 import { colors, placeholders } from './constants';
 import { Appearance } from 'react-native';
+import { useColorSchemeListener } from '../utils/useColorSchemeListener';
 
 const { width } = Dimensions.get('screen');
-const colorScheme = Appearance.getColorScheme();
 
-const defaultColor = colorScheme === 'dark' ? '#eee' : '#333';
-const defaultBackgroundColor = colorScheme === 'dark' ? '#242424' : '#eee';
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'space-around',
-    backgroundColor: defaultBackgroundColor
   },
   centered: {
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: defaultBackgroundColor
   },
   flexCentered: {
     alignItems: 'center',
@@ -30,7 +26,6 @@ const styles = StyleSheet.create({
     borderColor: colors.bright,
     borderWidth: 0.5,
     borderRadius: 30,
-    backgroundColor: colorScheme === 'dark' ? '#242424' : '#fff',
     height: 55,
     width: width * 0.9,
     padding: 16,
@@ -52,7 +47,6 @@ const styles = StyleSheet.create({
   text: {
     fontSize: 18,
     fontWeight: '500',
-    color: defaultColor
   },
   buttonText: {
     fontSize: 18,
@@ -63,26 +57,35 @@ const styles = StyleSheet.create({
 
 
 export function Container(props: any) {
+  const colorScheme = useColorSchemeListener();
+  const defaultBackgroundColor = colorScheme === 'dark' ? '#242424' : '#eee';
   return (
-    <SafeAreaView style={styles.container} {...props}>{props.children}</SafeAreaView>
+    <SafeAreaView style={{...styles.container, backgroundColor: defaultBackgroundColor}} {...props}>{props.children}</SafeAreaView>
   )
 };
 
 export function Centered(props: any) {
+  const colorScheme = useColorSchemeListener();
+  const defaultBackgroundColor = colorScheme === 'dark' ? '#242424' : '#eee';
   return (
-    <View style={styles.centered} {...props}>{props.children}</View>
+    <View style={{...styles.centered, backgroundColor: defaultBackgroundColor}} {...props}>{props.children}</View>
   )
 };
 
 export function FlexCentered(props: any) {
+  const colorScheme = useColorSchemeListener();
+  const defaultBackgroundColor = colorScheme === 'dark' ? '#242424' : '#eee';
   return (
-    <Centered style={styles.flexCentered} {...props}>{props.children}</Centered>
+    <Centered style={{...styles.flexCentered, backgroundColor: defaultBackgroundColor}} {...props}>{props.children}</Centered>
   )
 };
 
 export function MyTextInput(props: any) {
+  const colorScheme = useColorSchemeListener();
+  const defaultColor = colorScheme === 'dark' ? '#eee' : '#333';
+  const defaultBackgroundColor = colorScheme === 'dark' ? '#242424' : '#fff';
   return (
-    <TextInput style={styles.textInput} autoCorrect = {true} autoCapitalize='none' keyboardType={props.keyboardType} returnKeyType='done' placeholder={props.placeholder} secureTextEntry={props.secureTextEntry} onChangeText={props.onChangeText} textContentType={props.textContentType} autoCompleteType={props.autoCompleteType} {...props} />
+    <TextInput style={{...styles.textInput, backgroundColor: defaultBackgroundColor, color: defaultColor}} placeholderTextColor={defaultColor} autoCorrect = {true} autoCapitalize='none' keyboardType={props.keyboardType} returnKeyType='done' placeholder={props.placeholder} secureTextEntry={props.secureTextEntry} onChangeText={props.onChangeText} textContentType={props.textContentType} autoCompleteType={props.autoCompleteType} {...props} />
   )
 };
 
@@ -95,8 +98,10 @@ export function MyButton(props: any) {
 };
 
 export function MyText(props: any) {
+  const colorScheme = useColorSchemeListener();
+  const defaultColor = colorScheme === 'dark' ? '#eee' : '#333';
   return (
-    <Text style={styles.text} {...props}></Text>
+    <Text style={{...styles.text, color: defaultColor}} {...props}></Text>
   )
 };
 export function MyButtonText(props: any) {

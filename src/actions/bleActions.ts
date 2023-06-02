@@ -1,5 +1,8 @@
 import { PermissionsAndroid, Platform } from 'react-native';
-
+import { ScanMode } from 'react-native-ble-plx';
+import { ToastAndroid } from 'react-native';
+import { PERMISSIONS, requestMultiple } from 'react-native-permissions';
+import DeviceInfo from 'react-native-device-info';
 export const addBLE = (device: any) => ({
   type: 'ADD_BLE',
   device,
@@ -12,7 +15,7 @@ export const connectedDevice = (device: any) => ({
 
 export const disconnectedDevice = (device: any) => ({
   type: "DISCONNECTED_DEVICE",
-  disconnectedDevice: device
+  payload: device
 });
 
 export const connectedServiceCharacteristics = (characteristic: any) => ({
@@ -57,7 +60,7 @@ export const startScan = () => {
     console.log("start Scanning");
     const subscription = DeviceManager.onStateChange((state: string) => {
       if (state === 'PoweredOn') {
-        console.log("powered on");
+        console.log("Powered on");
         dispatch(scan());
         subscription.remove();
       }
@@ -91,22 +94,67 @@ const requestLocationPermission = async () => {
   }
 };
 
+const requestPermissions = async () => {
+  if (Platform.OS === 'android') {
+      const apiLevel = await DeviceInfo.getApiLevel();
+
+      if(apiLevel < 31) {
+          const granted = await PermissionsAndroid.request(
+              PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+              {
+                  title: 'Location Permission',
+                  message: 'Bluetooth Low Energy requires Location',
+                  buttonNeutral: 'Ask Later',
+                  buttonNegative: 'Cancel',
+                  buttonPositive: 'Ok',
+              }
+          );
+          return granted === PermissionsAndroid.RESULTS.GRANTED;
+      } else {
+          const result = await requestMultiple([
+              PERMISSIONS.ANDROID.BLUETOOTH_SCAN,
+              PERMISSIONS.ANDROID.BLUETOOTH_CONNECT,
+              PERMISSIONS.ANDROID.ACCESS_FINE_LOCATION,
+          ]);
+
+          const isGranted = 
+              result['android.permission.BLUETOOTH_CONNECT'] ===
+                  PermissionsAndroid.RESULTS.GRANTED &&
+              result['android.permission.BLUETOOTH_SCAN'] ===
+                  PermissionsAndroid.RESULTS.GRANTED &&
+              result['android.permission.ACCESS_FINE_LOCATION'] ===
+                  PermissionsAndroid.RESULTS.GRANTED;
+
+          return isGranted;
+      }
+  } else {
+      return true;
+  }
+};
+
+
 export const scan = () => {
   return async (dispatch: Function, getState: Function, DeviceManager: any) => {
-    const permission = Platform.OS === 'ios'? true: await requestLocationPermission();
+    const permission = Platform.OS === 'ios'? true: await requestPermissions();
     if (permission) {
-      DeviceManager.startDeviceScan(null, { allowDuplicates: false }, (error: any, device: any) => {
+      DeviceManager.startDeviceScan(null, 
+        { 
+        allowDuplicates: false,
+        scanMode: ScanMode.LowLatency 
+      }, (error: any, device: any) => {
         dispatch(changeStatus('Scanning'));
         if (error) {
           console.log(error);
+          ToastAndroid.show(error, ToastAndroid.SHORT);
         }
         if (device !== null) {
           dispatch(addBLE(device));
+          dispatch(connectDevice(device));
         }
       });
     } else {
       //TODO: here we could treat any new state or new thing when there's no permission to BLE
-      console.log('Error permission');
+      ToastAndroid.show('Bluetooth isn\'t allowed', ToastAndroid.SHORT);
     }
   };
 };
@@ -123,20 +171,25 @@ export const getServiceCharacteristics = (service: any) => {
   };
 };
 
+export const stopScan = () => {
+  return (dispatch: Function, getState: Function, DeviceManager: any) => {
+    dispatch(changeStatus("Stop scanning"));
+    DeviceManager.stopDeviceScan()
+  }
+}
+
 export const connectDevice = (device: any) => {
   return (dispatch: Function, getState: Function, DeviceManager: any) => {
     dispatch(changeStatus("Connecting"));
-    // DeviceManager.stopDeviceScan()
-    device
-      .connect()
+    DeviceManager.stopDeviceScan()
+    DeviceManager.connectToDevice(device.id, {autoConnect: true})
       .then((device: any) => {
         dispatch(changeStatus("Discovering"));
         let allCharacteristics = device.discoverAllServicesAndCharacteristics()
         dispatch(connectedDevice(device));
-
         const serviceUUID = '0000ffe0-0000-1000-8000-00805f9b34fb'; // UUID of the service that contains the location characteristic
         device.characteristicsForService(serviceUUID)
-          .then((characteristics) => {
+          .then((characteristics: any) => {
             const locationCharacteristic = characteristics.find((c) => c.uuid === '0000ffe1-0000-1000-8000-00805f9b34fb'); // UUID of the location characteristic
             locationCharacteristic.monitor((error, characteristic) => {
               if (error) {
@@ -145,37 +198,32 @@ export const connectDevice = (device: any) => {
               }
               
               const { value } = characteristic;
-              const latitude = value.getFloat32(0, true);
-              const longitude = value.getFloat32(4, true);
+              const lat = value.getFloat32(0, true);
+              const lng = value.getFloat32(4, true);
 
-              dispatch(setLocation({latitude, longitude}));
+              dispatch(setLocation({id: device.id, location: {lat, lng}}));
             });
             const batteryCharacteristic = characteristics.find((c) => c.uuid ==='6e400002-b5a3-f393-e0a9-e50e24dcca9e'); // UUID of the battery characteristic
             batteryCharacteristic.read()
-            .then((data) => {
-            const batteryLevel = data[0]; // Battery level as a byte value
-            console.log('Battery level:', batteryLevel);
-            })
-            .catch((error) => {
-            console.log('Error while reading battery characteristic:', error);
+              .then((data: any) => {
+                const batteryLevel = data[0]; // Battery level as a byte value
+                console.log('Battery level:', batteryLevel);
+                dispatch(setBattery({id: device.id, battery: batteryLevel}))
+              })
+            .catch((error: any) => {
+              console.log('Error while reading battery characteristic:', error);
             });
           })
-          .catch((error) => {
+          .catch((error: any) => {
             console.log('Error while getting characteristics for service:', error);
           });
-        return allCharacteristics;
+          
+        dispatch(disconnectDevice(device));
       })
-      .then((device: any) => {
-        let services = device.services(device.id);
-        return services;
+      .catch((error: any)=>{
+        console.log(error)
+        dispatch(disconnectDevice(device));
       })
-      .then((services: any) => {
-          console.log("found services: ", services)
-          dispatch(connectedDeviceServices(services));
-        }, (error: any) => {
-          console.log("SCAN", error);
-      })
-      .catch(error=>console.log(error))
 
   }
 }
@@ -183,13 +231,11 @@ export const connectDevice = (device: any) => {
 export const disconnectDevice = (device: any) => {
   return (dispatch: Function, getState: Function, DeviceManager: any) => {
     dispatch(changeStatus("Disconnecting"));
-    // DeviceManager.stopDeviceScan()
-    device
-      .cancelConnection()
-      .then((cancelled: any) => {
+    DeviceManager.cancelDeviceConnection(device.id)
+      .then((device) => {
         dispatch(changeStatus("Disconnected"));
-        dispatch(disconnectedDevice(device));
+        // dispatch(disconnectedDevice(device));
       })
-      .catch((error)=>console.log(error))
+      .catch((error: any)=>console.log('Disconnect', error))
   }
 }

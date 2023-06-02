@@ -6,6 +6,7 @@ import useBle from '../../useBle'
 import { useSelector } from 'react-redux'
 import { getBeacons } from '../../services/appService'
 import { setBeacons } from '../../actions/appActions'
+import { useColorSchemeListener } from '../../utils/useColorSchemeListener'
 
 
 
@@ -18,32 +19,27 @@ const ListDeviceItem = (props: any) => {
       paddingVertical: 8,
       paddingHorizontal: 8, 
       marginVertical: 1,
-      backgroundColor: '#ffffff',
+      backgroundColor: props.defaultBackgroundColor,
       shadowColor: '#242424'
     }}
       >
       <View style={{padding: 8}}>
-          <MaterialIcons name='wifi' size={24} style={{}} />
-          <Text style={{fontSize: 12}}>{props.device?.rssi}</Text>
+          <MaterialIcons name='wifi' size={24} color={props.defaultColor} />
+          <Text style={{fontSize: 12, color: props.defaultColor}}>{props.device?.rssi}</Text>
       </View>
       <View style={{flex: 1, flexDirection: 'row', justifyContent: 'flex-start', alignItems: 'center'}}>
         <View style={{flex: 1, justifyContent: 'space-around', marginLeft: 4}}>
-          <Text style={{fontSize: 18}}>{props?.device?.name}</Text>
-          <Text style={{fontSize: 12}}>{props?.device?.id}</Text>
+          <Text style={{fontSize: 18, color: props.defaultColor}}>{props?.device?.name}</Text>
+          <Text style={{fontSize: 12, color: props.defaultColor}}>{props?.device?.id}</Text>
         </View>
-        <Text>{props?.device?.txPowerLevel}</Text>
+        <Text style={{color: props.defaultColor}}>{props?.device?.txPowerLevel}</Text>
         <TouchableOpacity
           onPress={()=>{
             const {device, navigation} = props;
-            // bleManager.connectToDevice(device.id, {autoConnect:true})
-            //   .then((device: any) => {
-            //     navigation.navigate('Details', {
-            //       device: device
-            //     });
-            //   })
               navigation.navigate('AddBeacon', {
                 uuid: device?.id,
-                location:device.location
+                // location: device.location
+                location: {lat: 48, lng: 2}
               });
           }}
           style={{
@@ -56,6 +52,7 @@ const ListDeviceItem = (props: any) => {
           <MaterialIcons
             name='keyboard-arrow-right'
             size={25}
+            color={props.defaultColor}
           />
 
         </TouchableOpacity>
@@ -70,7 +67,9 @@ const DeviceScanScreen = ({navigation, route}) => {
   const mybeacons = useSelector((state: any) => state.app.beacons)
   const keys =  mybeacons.map((bledevice: any)=>bledevice.mac);
   const devices = bledevices.filter((item: any) => !keys.includes(item.id))
-
+  const colorScheme = useColorSchemeListener();
+  const defaultBackgroundColor = colorScheme === 'dark' ? '#242424' : '#fff';
+  const defaultColor = colorScheme === 'dark' ? '#eee' : '#333';
   const [devices_, setDevices_] = useState([
     {
       name: 'Beacon #1',
@@ -96,7 +95,7 @@ const DeviceScanScreen = ({navigation, route}) => {
     <View>
       <FlatList 
         data={devices}
-        renderItem={({item})=>(<ListDeviceItem device={item} navigation={navigation} />)}
+        renderItem={({item})=>(<ListDeviceItem device={item} navigation={navigation} defaultBackgroundColor={defaultBackgroundColor} defaultColor={defaultColor} />)}
       />
     </View>
   )

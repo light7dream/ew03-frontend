@@ -2,6 +2,7 @@ export type RootStackParamList = {
     Home: undefined;
     DeviceScan: undefined;
     Devices: undefined;
+    MapView: undefined;
     Beacons: undefined;
     AddBeacon: undefined;
     Account: undefined;

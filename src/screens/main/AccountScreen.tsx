@@ -1,4 +1,4 @@
-import { View, Text, Dimensions } from 'react-native'
+import { View, Dimensions } from 'react-native'
 import React, {useState} from 'react'
 import { MyButton, MyButtonText, MyText, MyTextInput } from '../../shared';
 import { useDispatch, useSelector } from 'react-redux';
