@@ -1,9 +1,9 @@
 import React, {useEffect} from 'react';
-import {View, Text, TouchableOpacity} from 'react-native';
+import {View, Text, TouchableOpacity, ScrollView} from 'react-native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-import {useSelector, useDispatch} from 'react-redux'
-import { startScan, stopScan } from '../../actions/bleActions';
+import {useDispatch} from 'react-redux'
 import { useColorSchemeListener } from '../../utils/useColorSchemeListener';
+import { BackHandler } from 'react-native';
 
 function ListMenuItem({defaultBackgroundColor, onPress, icon, title}) {
 
@@ -19,14 +19,14 @@ function ListMenuItem({defaultBackgroundColor, onPress, icon, title}) {
       style={{
         flex: 1,
         alignItems: 'center',
-        padding: 12,
+        padding: 8,
         marginHorizontal: 16,
         marginVertical: 6,
         backgroundColor: defaultBackgroundColor
       }}
       >
-        <View style={{backgroundColor: '#3a8fff', padding: 4, borderRadius: 100}}>
-          <MaterialIcons name={icon} size={50} color={'white'}/>
+        <View style={{backgroundColor: '#3a8fff', padding: 8, borderRadius: 100}}>
+          <MaterialIcons name={icon} size={42} color={'white'}/>
         </View>
         <Text style={{color: '#3a8fff', marginTop: 4}}>{title}</Text>
       </TouchableOpacity>
@@ -42,28 +42,35 @@ interface timerState {
 function HomeScreen({navigation}) {
   const colorScheme = useColorSchemeListener();
   const defaultBackgroundColor= colorScheme === 'dark' ? '#242424' : '#fff';
-  const isRunning = useSelector((state: { timer: timerState }) => state?.timer?.isRunning);
   const dispatch = useDispatch()
 
+  React.useLayoutEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <TouchableOpacity 
+              onPress={()=>{
+                BackHandler.exitApp();
+              }}
+              style={{alignItems: 'center', marginRight: 8}}
+              >
+                <MaterialIcons name='logout' size={32} />
+              </TouchableOpacity>
+      ),
+    });
+  }, [navigation]);
 
   useEffect(() => {
-    dispatch(startScan());
-    let intervalId = setInterval(() => {
-      dispatch(stopScan())
-      dispatch(startScan())
-    }, 10000)
     
-    return () => 
-      clearInterval(intervalId)
-    
-  }, [isRunning])
+  }, [])
   
   return (
+    <ScrollView>
     <View style={{flex: 1, alignItems: 'center', justifyContent: 'center'}}>
-      <ListMenuItem title="My Devices" icon = 'where-to-vote' onPress={()=>{navigation.navigate('Beacons')}} defaultBackgroundColor={defaultBackgroundColor}/>         
+      <ListMenuItem title="Audit" icon = 'where-to-vote' onPress={()=>{navigation.navigate('Audits')}} defaultBackgroundColor={defaultBackgroundColor}/>         
+      <ListMenuItem title="My Beacons" icon = 'add-location-alt' onPress={()=>{navigation.navigate('Beacons')}} defaultBackgroundColor={defaultBackgroundColor}/>         
       <ListMenuItem title="Account" icon = 'perm-identity' onPress={()=>{navigation.navigate('Account')}} defaultBackgroundColor={defaultBackgroundColor}/>         
-      {/* <ListMenuItem title="Setting" icon = 'settings' onPress={()=>{}} />          */}
     </View>
+    </ScrollView>
   );
 }
 

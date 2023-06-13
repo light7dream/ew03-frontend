@@ -3,14 +3,40 @@ import React, { useState, useEffect } from 'react'
 import { TouchableOpacity } from 'react-native'
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons'
 import useBle from '../../useBle'
-import { useSelector } from 'react-redux'
+import { useDispatch, useSelector } from 'react-redux'
 import { getBeacons } from '../../services/appService'
-import { setBeacons } from '../../actions/appActions'
+import { checkMAC } from '../../services/appService'
 import { useColorSchemeListener } from '../../utils/useColorSchemeListener'
-
-
+import { scan, startScan, stopScan } from '../../actions/bleActions'
+import { useToast } from 'react-native-toast-notifications';
+import { check } from 'react-native-permissions'
 
 const ListDeviceItem = (props: any) => {
+  const toast = useToast();
+  const callCheckMAC = () => {
+      const {device, navigation} = props;
+      // navigation.navigate('AddBeacon', {
+      //   uuid: device?.id,
+      //   back: 'DeviceScan'
+      // });
+      checkMAC(device?.id).then((res) => {
+          if(res.exist){
+              toast.show("The device already exists", {
+                  type: "danger",
+                  placement: "top",
+                  duration: 4000,
+                  offset: 30,
+                  animationType: "zoom-in",
+              });          
+          } else {              
+              navigation.navigate('AddBeacon', {
+                  uuid: device?.id,
+                  back: 'DeviceScan'
+                });
+          }
+      })
+  }
+
   return (
     <TouchableOpacity style={{
       flexDirection: 'row', 
@@ -34,14 +60,7 @@ const ListDeviceItem = (props: any) => {
         </View>
         <Text style={{color: props.defaultColor}}>{props?.device?.txPowerLevel}</Text>
         <TouchableOpacity
-          onPress={()=>{
-            const {device, navigation} = props;
-              navigation.navigate('AddBeacon', {
-                uuid: device?.id,
-                // location: device.location
-                location: {lat: 48, lng: 2}
-              });
-          }}
+          onPress={ callCheckMAC }
           style={{
             width: 48,
             padding: 8,
@@ -62,11 +81,12 @@ const ListDeviceItem = (props: any) => {
 }
 
 const DeviceScanScreen = ({navigation, route}) => {
-
+  const dispatch = useDispatch()
   const bledevices = useSelector((state: any) => state.BLE.BLEList)
   const mybeacons = useSelector((state: any) => state.app.beacons)
   const keys =  mybeacons.map((bledevice: any)=>bledevice.mac);
-  const devices = bledevices.filter((item: any) => !keys.includes(item.id))
+  // const devices = bledevices.filter((item: any) => !keys.includes(item.id))
+  const devices = bledevices;
   const colorScheme = useColorSchemeListener();
   const defaultBackgroundColor = colorScheme === 'dark' ? '#242424' : '#fff';
   const defaultColor = colorScheme === 'dark' ? '#eee' : '#333';
@@ -91,6 +111,11 @@ const DeviceScanScreen = ({navigation, route}) => {
     }
   ]);
 
+  useEffect(()=>{
+    dispatch(stopScan())
+    dispatch(startScan());
+  }, [])
+  
   return (
     <View>
       <FlatList 

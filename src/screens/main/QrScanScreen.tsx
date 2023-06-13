@@ -1,4 +1,4 @@
-import React, { useState, Fragment, useRef } from 'react'
+import React, { useState, Fragment, useRef, useEffect } from 'react'
 import { TouchableOpacity, Text, Linking, View, Image, ImageBackground, BackHandler, StyleSheet, TextInput, Button } from 'react-native';
 import QRCodeScanner from 'react-native-qrcode-scanner';
 
@@ -7,10 +7,14 @@ import { useDispatch } from 'react-redux';
 import { AppDisPatch } from '../../store';
 import { addBeacon } from '../../services/appService';
 import { addBeacon as addedBeacon } from '../../actions/appActions';
+import Geolocation from 'react-native-geolocation-service';
 import { Appearance } from 'react-native';
 import { useColorSchemeListener } from '../../utils/useColorSchemeListener';
 import Geocoder from 'react-native-geocoding';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import { ScrollView } from 'react-native';
+import { useToast } from 'react-native-toast-notifications';
+import { checkMAC } from '../../services/appService';
 
 Geocoder.init("AIzaSyBM7oejbfOKFrGXvyH2fhYY5mBaNI71_J8");
 const deviceWidth = Dimensions.get('screen').width;
@@ -128,7 +132,7 @@ const styles = StyleSheet.create({
     }
 });
 
-const QrScanScreen = ({navigation}) => {
+const QrScanScreen = ({navigation, route}) => {
     const colorScheme = useColorSchemeListener();
     const defaultBackgroundColor = colorScheme === 'dark' ? '#242424' : '#eee';
     const defaultColor = colorScheme === 'dark' ? '#fff' : '#333';
@@ -143,6 +147,34 @@ const QrScanScreen = ({navigation}) => {
     const [message, setMessage] = useState('')
     const scanner = useRef();
     const disaptch = useDispatch<AppDisPatch>();
+    const toast = useToast();
+
+    useEffect(() => {
+        if(route.params?.location)
+        {
+            setLocation(route.params?.location)
+        }
+        else{
+            Geolocation.getCurrentPosition(
+                position => {
+                    const { latitude, longitude } = position.coords;
+                    setLocation({
+                        lat: latitude,
+                        lng: longitude
+                    })
+                    Geocoder.from(latitude, longitude)
+                    .then(json => {
+                        var addressComponent = json.results[0].formatted_address;
+                        console.log(json.results[0].formatted_address)
+                        setAddress(addressComponent)
+                    })
+                    .catch(error => console.warn(error));
+                },
+                error => console.log(error),
+                { enableHighAccuracy: true, timeout: 20000, maximumAge: 1000 },
+            );
+        }
+      }, [route.params]);
 
     const handleMessage = (msg: string) => {
         setMessage(msg)
@@ -152,8 +184,26 @@ const QrScanScreen = ({navigation}) => {
     const onSuccess = (e: any) => {
         setResult(e);
         setScan(false);
-        setScanResult(true);
-        setMac(e.data.split('=')[1])
+        setMac(e.data.split('=')[1]);
+        
+        checkMAC(e.data.split('=')[1]).then((res) => {
+            if(res.exist){
+                toast.show("The device already exists", {
+                    type: "danger",
+                    placement: "top",
+                    duration: 4000,
+                    offset: 30,
+                    animationType: "zoom-in",
+                });       
+                
+            } else {              
+                setScanResult(true);
+                // navigation.navigate('AddBeacon', {
+                //     uuid: mac,
+                //     back: 'DeviceScan'
+                //   });
+            }
+        })
     }
 
     const activeQR = () => {
@@ -164,7 +214,18 @@ const QrScanScreen = ({navigation}) => {
         setScan(true);
         setScanResult(false);
     }
-
+    const handleChangeLat = (lat: string) => {
+        setLocation({
+            lat: lat,
+            lng: location?.lng
+        })
+    }
+    const handleChangeLng = (lng: string) => {
+        setLocation({
+            lat: location?.lat,
+            lng: lng
+        })
+    }
     const handleChangeName = (name: string) => {
         setName(name)
     }
@@ -200,13 +261,25 @@ const QrScanScreen = ({navigation}) => {
                 setScan(false);
                 setScanResult(false)
                 setResult(null)
-                disaptch(addedBeacon(res.beacon));
+                if(res.added){
+                    disaptch(addedBeacon(res.beacon));
+                } else {                    
+                    toast.show("The device already exists", {
+                        type: "danger",
+                        placement: "top",
+                        duration: 4000,
+                        offset: 30,
+                        animationType: "zoom-in",
+                    });
+                }
+                navigation.navigate('Beacons');
             })
             .catch((err)=>handleMessage(err.message))
     }
 
   return (
-    <View style={styles.scrollViewStyle}>
+      <View style={styles.scrollViewStyle}>
+        <ScrollView>
         <Fragment>
             {!scan && !scanResult &&
                 <View style={{...styles.cardView, backgroundColor: defaultBackgroundColor}} >
@@ -224,7 +297,7 @@ const QrScanScreen = ({navigation}) => {
             {scanResult &&
                 <Fragment>
                     <Text style={styles.textTitle1}>Result</Text>
-                    <View style={{...(scanResult ? styles.scanCardView : styles.cardView), backgroundColor: defaultBackgroundColor}}>
+                    <View style={{...(scanResult ? styles.scanCardView : styles.cardView), backgroundColor: defaultBackgroundColor, marginBottom: 12}}>
                         <View style={{flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 8}}>
                             <Text style={{fontSize: 16}}>Name</Text>
                             <TextInput style={{borderBottomColor: '#000', borderBottomWidth: .3, minWidth: 160, maxWidth: deviceWidth-160}} onChangeText={handleChangeName} />
@@ -235,10 +308,37 @@ const QrScanScreen = ({navigation}) => {
                         </View>
                         <View style={{flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 8}}>
                             <Text style={{fontSize: 16}}>Address</Text>
-                            <TextInput value={address} style={{borderBottomColor: '#000', borderBottomWidth: .3, minWidth: 160, maxWidth: deviceWidth-160}} onChangeText={handleChangeAddress} onSubmitEditing={handleSubmitAddress}/>
+                            <TextInput value={address} style={{borderBottomColor: '#000', borderBottomWidth: .3, minWidth: 160, maxWidth: deviceWidth-160}} onChangeText={handleChangeAddress}/>
                         </View>
-                        <View style={{flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'flex-end', marginBottom: 8}}>
-                            {/* <Text style={{fontSize: 16}}></Text> */}
+                        
+                        <View style={{flexDirection: 'column', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 8, paddingTop: 8}}>
+                            <Text style={{fontSize: 16, marginVertical: 4}}>Location</Text>
+                        <View style={{borderColor: 'rgba(0, 0, 0, 0.2)', borderWidth: 1, borderStyle: 'dashed', margin: 2, flexDirection: 'row', justifyContent: 'flex-start', borderRadius: 2}}>
+                            <View style={{flex: 1, alignItems: 'center',justifyContent: 'center'}}>
+                                <TouchableOpacity onPress={()=>{navigation.navigate('MapView', {
+                                    location: {
+                                        latitude: location.lat,
+                                        longitude: location.lng
+                                    },
+                                    back: 'QR Scan'
+                                })}} style={{flexDirection: 'row', justifyContent: 'center', alignItems: 'center', width: 48, height: 48 ,backgroundColor: '#36a3ff', borderRadius: 4}}>
+                                    <MaterialIcons name='location-on' size={32} color={'white'}/>
+                                </TouchableOpacity>
+                            </View>
+                            <View style={{padding: 8, flex: 2}}>
+                                <View style={{flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center'}}>
+                                    <Text style={{fontSize: 12, color: defaultColor}}>Lat</Text>
+                                    <TextInput style={{marginLeft:8, width: '80%', color: defaultColor, fontSize: 10}}  textAlign='right' value={location?.lat?location?.lat+'': ''} placeholder='Latitude' onChangeText={handleChangeLat}/>
+                                </View>
+                                <View style={{flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center'}}>
+                                    <Text style={{fontSize: 12, color: defaultColor}}>Long</Text>
+                                    <TextInput style={{marginLeft:8, width: '80%', color: defaultColor, fontSize: 10}}  textAlign='right' value={location?.lng?location?.lng+'': ''} placeholder='Longtitude' onChangeText={handleChangeLng}/>
+                                </View>
+                            </View>
+                        
+                        </View>
+                        </View>
+                        {/* <View style={{flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'flex-end', marginBottom: 8}}>
                             {
                                 location&&(
                                 <>
@@ -254,7 +354,7 @@ const QrScanScreen = ({navigation}) => {
                                 </>
                                 )
                             }
-                        </View>
+                        </View> */}
                         
                         <View style={{flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 8}}>
                             <Text style={{fontSize: 16}}>Description</Text>
@@ -282,7 +382,7 @@ const QrScanScreen = ({navigation}) => {
                     onRead={onSuccess}
                     topContent={
                         <Text style={styles.centerText}>
-                            Please move your camera {"\n"} over the QR Code
+                            {/* Please move your camera {"\n"} over the QR Code */}
                         </Text>
                     }
                     bottomContent={
@@ -299,6 +399,7 @@ const QrScanScreen = ({navigation}) => {
                 />
             }
         </Fragment>
+        </ScrollView>
     </View>
 
   )

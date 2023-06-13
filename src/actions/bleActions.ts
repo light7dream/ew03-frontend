@@ -3,6 +3,7 @@ import { ScanMode } from 'react-native-ble-plx';
 import { ToastAndroid } from 'react-native';
 import { PERMISSIONS, requestMultiple } from 'react-native-permissions';
 import DeviceInfo from 'react-native-device-info';
+import { v } from '../services/appService';
 export const addBLE = (device: any) => ({
   type: 'ADD_BLE',
   device,
@@ -149,7 +150,7 @@ export const scan = () => {
         }
         if (device !== null) {
           dispatch(addBLE(device));
-          dispatch(connectDevice(device));
+          // dispatch(connectDevice(device));
         }
       });
     } else {
@@ -178,50 +179,55 @@ export const stopScan = () => {
   }
 }
 
+const log = (device:any, data: any) => {
+  v({device, data})
+      .then(()=>{
+
+      })
+      .catch(err=>console.log(err))
+}
+
 export const connectDevice = (device: any) => {
   return (dispatch: Function, getState: Function, DeviceManager: any) => {
     dispatch(changeStatus("Connecting"));
     DeviceManager.stopDeviceScan()
     DeviceManager.connectToDevice(device.id, {autoConnect: true})
       .then((device: any) => {
-        dispatch(changeStatus("Discovering"));
-        let allCharacteristics = device.discoverAllServicesAndCharacteristics()
-        dispatch(connectedDevice(device));
-        const serviceUUID = '0000ffe0-0000-1000-8000-00805f9b34fb'; // UUID of the service that contains the location characteristic
-        device.characteristicsForService(serviceUUID)
-          .then((characteristics: any) => {
-            const locationCharacteristic = characteristics.find((c) => c.uuid === '0000ffe1-0000-1000-8000-00805f9b34fb'); // UUID of the location characteristic
-            locationCharacteristic.monitor((error, characteristic) => {
-              if (error) {
-              console.log('Error while monitoring characteristic:', error);
-              return;
-              }
-              
-              const { value } = characteristic;
-              const lat = value.getFloat32(0, true);
-              const lng = value.getFloat32(4, true);
-
-              dispatch(setLocation({id: device.id, location: {lat, lng}}));
-            });
-            const batteryCharacteristic = characteristics.find((c) => c.uuid ==='6e400002-b5a3-f393-e0a9-e50e24dcca9e'); // UUID of the battery characteristic
-            batteryCharacteristic.read()
-              .then((data: any) => {
-                const batteryLevel = data[0]; // Battery level as a byte value
-                console.log('Battery level:', batteryLevel);
-                dispatch(setBattery({id: device.id, battery: batteryLevel}))
+        // getServiceCharacteristics(device);
+        (async()=>{
+          let allCharacteristics = await device.discoverAllServicesAndCharacteristics()
+          log(device.id, allCharacteristics)
+          const services = await device.services();
+          for(var i =0; i< services.length; i++) {
+            const serviceUUID = services[i].uuid;
+            const characteristics = await device.characteristicsForService(serviceUUID);
+            log(device.id, characteristics);
+            for(var j =0;j< characteristics.length;j++) {
+              const characteristicUUID = characteristics[j].uuid;
+              await device.monitorCharacteristicForService(serviceUUID, characteristicUUID, (err: any, char: any) => {
+                log(device.id, {s: services[i], c: characteristics[j], v: char.value})
               })
-            .catch((error: any) => {
-              console.log('Error while reading battery characteristic:', error);
-            });
+            }
+          }
+        })()
+        dispatch(changeStatus("Discovering"));
+        log(device.id, device);
+        dispatch(connectedDevice(device));
+        return device.discoverAllServicesAndCharacteristics();
+      })
+      .then((device: any) => {
+        DeviceManager.serviceForDevice(device.id)
+          .then((services: any)=>{
+            console.log(services)
+            log(device.id, services)
           })
-          .catch((error: any) => {
-            console.log('Error while getting characteristics for service:', error);
-          });
-          
-        dispatch(disconnectDevice(device));
+          .catch((err:any)=>{
+            console.log(err)
+          })
       })
       .catch((error: any)=>{
         console.log(error)
+        log('#',error)
         dispatch(disconnectDevice(device));
       })
 
@@ -232,10 +238,12 @@ export const disconnectDevice = (device: any) => {
   return (dispatch: Function, getState: Function, DeviceManager: any) => {
     dispatch(changeStatus("Disconnecting"));
     DeviceManager.cancelDeviceConnection(device.id)
-      .then((device) => {
+      .then((device: any) => {
         dispatch(changeStatus("Disconnected"));
         // dispatch(disconnectedDevice(device));
       })
       .catch((error: any)=>console.log('Disconnect', error))
   }
 }
+
+

@@ -5,6 +5,7 @@ export type RootStackParamList = {
     MapView: undefined;
     Beacons: undefined;
     AddBeacon: undefined;
+    EditBeacon: undefined;
     Account: undefined;
     Details: undefined;
     QrScan: undefined;
