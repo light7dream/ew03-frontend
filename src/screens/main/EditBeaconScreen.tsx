@@ -102,7 +102,7 @@ export default function EditBeaconScreen({navigation, route}) {
         // })
         updateBeacon(route.params?.id, {name, mac, location, address, description})
             .then((res: any)=>{
-                console.log(res.beacon)
+                console.log("update result => ", res.beacon)
                 disaptch(updatedBeacon(res.beacon));
                 navigation.navigate('Beacons')
             })

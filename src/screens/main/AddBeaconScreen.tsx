@@ -34,23 +34,24 @@ export default function AddBeaconScreen({navigation, route}) {
         if(!route.params?.location)
         {
             Geolocation.getCurrentPosition(
-            position => {
-                const { latitude, longitude } = position.coords;
-                setLocation({
-                    lat: latitude,
-                    lng: longitude
-                })
-                Geocoder.from(latitude, longitude)
-                .then(json => {
-                    var addressComponent = json.results[0].formatted_address;
-                    console.log(json.results[0].formatted_address)
-                    setAddress(addressComponent)
-                })
-                .catch(error => console.warn(error));
-            },
-            error => console.log(error),
-            { enableHighAccuracy: true, timeout: 20000, maximumAge: 1000 },
-            );
+                position => {
+                    const { latitude, longitude } = position.coords;
+                    console.log("location ====>>>>> ", latitude);
+                    setLocation({
+                        lat: latitude,
+                        lng: longitude
+                    })
+                    Geocoder.from(latitude, longitude)
+                    .then(json => {
+                        var addressComponent = json.results[0].formatted_address;
+                        console.log(json.results[0].formatted_address)
+                        setAddress(addressComponent)
+                    })
+                    .catch(error => console.warn(error));
+                },
+                error => console.log(error),
+                { enableHighAccuracy: true, timeout: 20000, maximumAge: 1000 },
+                );
         }else{
             setLocation(route.params?.location);
         }
@@ -136,8 +137,8 @@ export default function AddBeaconScreen({navigation, route}) {
             <View style={{flex: 1, alignItems: 'center',justifyContent: 'center'}}>
                 <TouchableOpacity onPress={()=>{navigation.navigate('MapView', {
                     location: {
-                        latitude: location.lat,
-                        longitude: location.lng
+                        latitude: -35,
+                        longitude: -128
                     },
                     back: 'AddBeacon'
                 })}} style={{flexDirection: 'row', justifyContent: 'center', alignItems: 'center', width: 72, height: 72 ,backgroundColor: '#36a3ff', borderRadius: 4}}>
