@@ -137,6 +137,8 @@ export default function AddBeaconScreen({navigation, route}) {
             <View style={{flex: 1, alignItems: 'center',justifyContent: 'center'}}>
                 <TouchableOpacity onPress={()=>{navigation.navigate('MapView', {
                     location: {
+                        // latitude: location.lat,
+                        // longitude: location.lng
                         latitude: -35,
                         longitude: -128
                     },
