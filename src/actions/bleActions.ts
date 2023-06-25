@@ -141,17 +141,17 @@ export const scan = () => {
       DeviceManager.startDeviceScan(null, 
         { 
         allowDuplicates: false,
-        scanMode: ScanMode.LowLatency 
+        // scanMode: ScanMode.LowLatency 
       }, (error: any, device: any) => {
         dispatch(changeStatus('Scanning'));
         if (error) {
           console.log(error);
           ToastAndroid.show(error, ToastAndroid.SHORT);
         }
-        if (device !== null) {
-          dispatch(addBLE(device));
+        dispatch(addBLE(device));
+        // if (device !== null) {
           // dispatch(connectDevice(device));
-        }
+        // }
       });
     } else {
       //TODO: here we could treat any new state or new thing when there's no permission to BLE

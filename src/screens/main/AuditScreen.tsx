@@ -23,28 +23,23 @@ const ListItem = ( props: any) => {
             </View>
             <View>
                 <Text>{props.group.title}</Text>
-
             </View>
             <View style={{flexDirection: 'row', alignItems: 'center', }}>
-                <TouchableOpacity onPress={()=>{
-                    console.log(props.device)
-                        props.navigate('EditBeacon', {
-                            id: props.device?.id,
-                            name: props.device?.name,
-                            mac: props.device?.mac,
-                            address: props.device?.address,
-                            location: props.device?.location,
-                            description: props.device?.description
+                <TouchableOpacity onPress={()=>{                 
+                        props.navigate('AuditGroupEdit', {
+                            groupid: props.group._id,
+                            title: props.group.title
                         })
                     }} style={{padding: 4}}>
                         <MaterialIcons name='edit' size={24} color={props.defaultColor}/>
                 </TouchableOpacity>
                 <TouchableOpacity
                     onPress={()=>{
-                        if(!props.device.location)
+                        console.log(props.group._id)
+                        if(!props.group._id)
                             return;
-                        props.navigate('Details', {
-                            device: props.device
+                        props.navigate('AuditGroup', {
+                            groupid: props.group._id
                         })
                     }}
                     style={{

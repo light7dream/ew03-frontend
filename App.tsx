@@ -14,12 +14,17 @@ import DeviceListScreen from './src/screens/main/DeviceListScreen';
 import HomeScreen from './src/screens/main/HomeScreen';
 import DetailsScreen from './src/screens/main/DetailsScreen';
 import AuditScreen from './src/screens/main/AuditScreen';
+import AuditGroup from './src/screens/main/AuditGroup';
+import AuditGroupEdit from './src/screens/main/AuditGroupEdit';
 import { TouchableOpacity, View } from 'react-native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { BackHandler } from 'react-native';
 import MyBeaconList from './src/screens/main/MyBeaconList';
 import AuditBeaconList from './src/screens/main/AuditBeaconList';
 import AddBeaconScreen from './src/screens/main/AddBeaconScreen';
+import Users from './src/screens/main/Users';
+import UserAdd from './src/screens/main/UserAdd';
+import UserEdit from './src/screens/main/UserEdit';
 import {useNavigation} from '@react-navigation/native';
 import {Provider, useSelector} from 'react-redux';
 import { store } from './src/store';
@@ -65,6 +70,12 @@ const Route = ({defaultBackgroundColor , defaultColor , MyTheme}) => {
                   <Stack.Screen name="EditBeacon" component={EditBeaconScreen} options={{headerShown: true}} />
                   <Stack.Screen name="DeviceScan" component={DeviceScanScreen} options={{headerShown: true}} />
                   <Stack.Screen name="AuditBeaconList" component={AuditBeaconList} options={{headerShown:true}} />
+                  <Stack.Screen name="AuditGroup" component={AuditGroup} options={{headerShown:true}} />
+                  <Stack.Screen name="AuditGroupEdit" component={AuditGroupEdit} options={{headerShown:true}} />
+                  <Stack.Screen name="Users" component={Users} options={{headerShown:true}} />
+                  <Stack.Screen name="UserAdd" component={UserAdd} options={{headerShown:true}} />
+                  <Stack.Screen name="UserEdit" component={UserEdit} options={{headerShown:true}} />
+                  
                 </>
                 )}
               </Stack.Group>

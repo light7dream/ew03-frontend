@@ -16,15 +16,21 @@ import React, { useEffect, useState } from 'react'
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons'
 import {useSelector, useDispatch} from 'react-redux'
 import { AppDisPatch } from '../../store'
-import { getBeacons, deleteBeacon, saveAuditGroup , } from '../../services/appService'
-import {deleteBeacon as deletedBeacon, setBeacons,addedGroup} from '../../actions/appActions'
+import { getBeacons, deleteBeacon, saveAuditGroup , updateAuditGroup} from '../../services/appService'
+import {deleteBeacon as deletedBeacon, setBeacons,updatedGroup } from '../../actions/appActions'
 import { useColorSchemeListener } from '../../utils/useColorSchemeListener'
 import Checkbox from 'react-native-check-box';
 
 
 const BeaconListItem = (props: any) => {
 
-    const [checked, setChecked] = useState(false);
+    const [checked, setChecked] = useState(true);
+    useEffect(() => {
+        if(props.device.groupid == props.groupid)
+            setChecked(true);
+        else
+            setChecked(false);
+    },[])
 
     return (
         <TouchableOpacity 
@@ -56,18 +62,19 @@ const BeaconListItem = (props: any) => {
     )
 }
 
-export default function AuditBeaconList({navigation}) {
-
-    const [title, setTitle] = useState("");
+export default function AuditGroupEdit({navigation, route}) {
+    
+    const groupid = route.params.groupid;    
+    const [title, setTitle] = useState(route.params.title);
     const onSave = () => {
-        saveAuditGroup(title, selectedList).then((res) => {
-            dispatch(addedGroup(res.group)); 
+        updateAuditGroup(title, selectedList, groupid).then((res) => {
+            dispatch(updatedGroup(res.group)); 
             navigation.navigate("Audits");
         })
     }
     const dispatch = useDispatch<AppDisPatch>()
     const [enableCheckbox, setEnableCheckbox] = useState(false);
-    const [selectedList, setSelectedList] = useState<string[]>([]);
+    let selectedList = [];
     const colorScheme = useColorSchemeListener();
     const defaultBackgroundColor = colorScheme === 'dark' ? '#242424' : '#fff';
     const defaultColor = colorScheme === 'dark' ? '#eee' : '#333';
@@ -96,38 +103,33 @@ export default function AuditBeaconList({navigation}) {
                 device.rssi = matchedBle?.rssi
                 device.active = 1
             }
+            if(item.groupid == groupid)
+                selectedList.push(item._id);
             return device
         }).sort((a, b) => b.active - a.active)
-
+    console.log('groupid => ', groupid );
+    console.log("from audit edit , selected items => ", selectedList);
     useEffect(() => {
         getBeacons().then((res) => {
+            console.log("adddd => ", res.beacons);
             dispatch(setBeacons(res.beacons));    
+           
         })
 
-    }, [selectedList])
+    }, [])
 
-    const addList = (id: string) => {
-        setSelectedList([...selectedList, id])
+    const addList = (id: any) => {
+        selectedList.push(id);
     }   
 
-    const removeList = (id: string) => {
-        setSelectedList(selectedList.filter((item: any) => item !== id))
+    const removeList = (id: any) => {
+        console.log("before = ", selectedList);
+        const index = selectedList.indexOf(id);
+        selectedList.splice(index, 1);
+        console.log("after = ", selectedList);
     }
 
-    const deleteBeacons = async () => {
-        for(var i in selectedList){
-            try{
-                await deleteBeacon(selectedList[i])
-                await dispatch(deletedBeacon(selectedList[i]))
-            }
-            catch(err)
-            {
-                console.log(err)
-            }
-            
-        }
-        setSelectedList([]);
-    }
+    
 
   return (
     <View>
@@ -137,7 +139,8 @@ export default function AuditBeaconList({navigation}) {
                 <Text style={styles.save_btn_txt}>Save</Text>
             </TouchableOpacity>            
         </View>
-        <FlatList data={devices} renderItem={({item})=><BeaconListItem device={item} addList={addList} removeList={removeList} checkbox = {enableCheckbox} navigate={navigation.navigate} enableCheckbox={()=>setEnableCheckbox(true)} defaultBackgroundColor={defaultBackgroundColor} defaultColor={defaultColor} />} />
+        <FlatList data={devices} renderItem={({item})=><BeaconListItem device={item} addList={addList} removeList={removeList} checkbox = {enableCheckbox} navigate={navigation.navigate} enableCheckbox={()=>setEnableCheckbox(true)}
+             defaultBackgroundColor={defaultBackgroundColor} defaultColor={defaultColor} groupid={groupid}/>} />
     </View>
   )  
 }

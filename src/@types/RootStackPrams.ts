@@ -17,4 +17,11 @@ export type RootStackParamList = {
     ConfirmSignUp: undefined;
     Loading: undefined;
     Profile: undefined;
+    Audits: undefined;
+    AuditBeaconList: undefined;
+    AuditGroup: undefined;
+    AuditGroupEdit: undefined;
+    Users: undefined;
+    UserAdd: undefined;
+    UserEdit: undefined;
 };

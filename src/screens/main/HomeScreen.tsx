@@ -1,7 +1,7 @@
 import React, {useEffect} from 'react';
 import {View, Text, TouchableOpacity, ScrollView} from 'react-native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-import {useDispatch} from 'react-redux'
+import {useDispatch, useSelector} from 'react-redux'
 import { useColorSchemeListener } from '../../utils/useColorSchemeListener';
 import { BackHandler } from 'react-native';
 
@@ -43,6 +43,7 @@ function HomeScreen({navigation}) {
   const colorScheme = useColorSchemeListener();
   const defaultBackgroundColor= colorScheme === 'dark' ? '#242424' : '#fff';
   const dispatch = useDispatch()
+  const user = useSelector((state: any) => state.auth.user);
 
   React.useLayoutEffect(() => {
     navigation.setOptions({
@@ -68,6 +69,7 @@ function HomeScreen({navigation}) {
     <View style={{flex: 1, alignItems: 'center', justifyContent: 'center'}}>
       <ListMenuItem title="Audit" icon = 'where-to-vote' onPress={()=>{navigation.navigate('Audits')}} defaultBackgroundColor={defaultBackgroundColor}/>         
       <ListMenuItem title="My Beacons" icon = 'add-location-alt' onPress={()=>{navigation.navigate('Beacons')}} defaultBackgroundColor={defaultBackgroundColor}/>         
+      <ListMenuItem title="User Management" icon = 'users' onPress={()=>{navigation.navigate('Users')}} defaultBackgroundColor={defaultBackgroundColor}/>         
       <ListMenuItem title="Account" icon = 'perm-identity' onPress={()=>{navigation.navigate('Account')}} defaultBackgroundColor={defaultBackgroundColor}/>         
     </View>
     </ScrollView>

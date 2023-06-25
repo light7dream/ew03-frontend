@@ -187,5 +187,5 @@ export default function MyBeaconList({navigation}) {
     </View>
   )
 
-  const styles = S
+
 }

@@ -9,6 +9,7 @@ export const SET_MESSAGE = 'SET_MESSAGE';
 export const GET_ALL_AUDIT_GROUPS = 'GET_ALL_AUDIT_GROUPS';
 export const ADD_GROUP = 'ADD_GROUP';
 export const DELETE_GROUP = 'DELETE_GROUP';
+export const UPDATE_GROUP = 'UPDATE_GROUP';
 
 const setLoading = (loading: boolean) => ({
     type: LOADING,
@@ -37,6 +38,9 @@ export const setAllAuditGroups = (groups: any) => (dispatch: Dispatch) => {
 }
 export const addedGroup = (group: any) => (dispatch: Dispatch) => {
     dispatch({type: ADD_GROUP, payload: group});
+}
+export const updatedGroup = (group: any) => (dispatch: Dispatch) => {
+    dispatch({type: UPDATE_GROUP, payload: group});
 }
 export const deletedGroup = (id: any) => (dispatch: Dispatch) => {
     dispatch({type: DELETE_GROUP, payload: id});
